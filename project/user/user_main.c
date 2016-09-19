@@ -24,6 +24,7 @@
 
 #include "esp_common.h"
 
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -32,6 +33,6 @@
 *******************************************************************************/
 void user_init(void)
 {
-    printf("SDK version:%s\n", system_get_sdk_version());
+	user_demo();
 }
 

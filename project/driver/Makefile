@@ -12,10 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-UP_EXTRACT_DIR = ..
-GEN_LIBS = libmiddle.a
-COMPONENTS_libsample = conn_ap/libconnap.a	\
-                       folder2/libfolder2.a
+GEN_LIBS = libdriver.a
 endif
 
 
