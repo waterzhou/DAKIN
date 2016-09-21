@@ -44,25 +44,7 @@
 
 LOCAL uint8 device_status;
 
-static char vendor_ssid[32];
-static char vendor_passwd[64];
-static char *vendor_tpsk = "PLnBaCPHF7icf65a5nJmcL2GZC+w3vwCnH36k8O91og=";
-int ICACHE_FLASH_ATTR vendor_callback(char *ssid, char *passwd, char *bssid, unsigned int security, char channel) 
-{
-	if (!ssid) {
-		os_printf("zconfig timeout!\n");
-		system_restart();
-	} else {
-		os_printf("ssid:%s \n", ssid);
-		struct station_config *config = (struct station_config *)zalloc(sizeof(struct station_config));
-		strncpy(config->ssid, ssid, 32);
-		strncpy(config->password, passwd, 64);
-		wifi_station_set_config(config);
-		free(config);
-		wifi_station_connect();
-		
-	} 
-} 
+
 
 int ICACHE_FLASH_ATTR readSmartConfigFlag() {
 	int res = 0;
@@ -110,8 +92,12 @@ void ICACHE_FLASH_ATTR startdemo_task(void *pvParameters)
 			break;
 		vTaskDelay(100 / portTICK_RATE_MS);	 // 100 ms
 	}
-	alink_demo();
-	vTaskDelete(NULL);
+	//while(1)
+	{
+		vTaskDelay(100 / portTICK_RATE_MS);
+	}
+	udpClient();
+	//vTaskDelete(NULL);
 }
 
 /******************************************************************************
@@ -169,12 +155,12 @@ void ICACHE_FLASH_ATTR wificonnect_task(void *pvParameters)
 	//zconfig_start(vendor_callback, vendor_tpsk);   // alink smart config start
 	printf("waiting network ready...\r\n");
 	while (1) {
-		// device could show smart config status here, such as light Flashing.
 		int ret = wifi_station_get_connect_status();
 		if (ret == STATION_GOT_IP)
 			break;
 		vTaskDelay(100 / portTICK_RATE_MS);
 	}
+	printf("network is ready...\r\n");
 	need_notify_app = 1;
 	vTaskDelete(NULL);
 }
@@ -239,22 +225,22 @@ static void ICACHE_FLASH_ATTR sys_show_rst_info(void)
 void ICACHE_FLASH_ATTR user_demo(void) 
 {
 	unsigned int ret = 0;
+#if USER_UART_CTRL_DEV_EN
+	user_uart_dev_start();
+#endif
 	printf("SDK version:%s\n", system_get_sdk_version());
 	printf("heap_size %d\n", system_get_free_heap_size());
 
 	wifi_set_opmode(STATION_MODE);
-	ret = readSmartConfigFlag();// -1 read flash fail!
+	ret = -1;//readSmartConfigFlag();// -1 read flash fail!
 	printf(" read flag:%d \n", ret);
 	if (ret > 0) {		
 		setSmartConfigFlag(0);// clear smart config flag
 		xTaskCreate(wificonnect_task, "wificonnect_task", 256, NULL, 2, NULL);
 		need_notify_app = 1;
 	}
-	//xTaskCreate(startdemo_task, "startdemo_task",(256*4), NULL, 2, NULL);
+	xTaskCreate(startdemo_task, "startdemo_task",(256*4), NULL, 2, NULL);
 	
-#if USER_UART_CTRL_DEV_EN
-	user_uart_dev_start();
-#endif
 
 #if USER_SPI_CTRL_DEV_EN
 	//spi_init(HSPI);
