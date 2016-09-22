@@ -47,12 +47,12 @@ void UdpSendCb(void* arg)
 {
     struct espconn* udp_server_local=arg;
 
-	os_printf("UDP_SEND_CB ip:%d.%d.%d.%d port:%d\n",udp_server_local->proto.tcp->remote_ip[0],
+	/*os_printf("UDP_SEND_CB ip:%d.%d.%d.%d port:%d\n",udp_server_local->proto.tcp->remote_ip[0],
 		                                          udp_server_local->proto.tcp->remote_ip[1],
 		                                          udp_server_local->proto.tcp->remote_ip[2],
 		                                          udp_server_local->proto.tcp->remote_ip[3],
 		                                          udp_server_local->proto.tcp->remote_port\
-		                                          );
+		                                          );*/
 }
 
 void t1Callback(void* arg)
@@ -91,10 +91,7 @@ void udpClient(void*arg)
 
 	os_timer_disarm(&time1);
 	os_timer_setfn(&time1,t1Callback,NULL);
-	os_timer_arm(&time1,1000,1);
+	os_timer_arm(&time1,4000,1);
 	
-	
-	vTaskDelete(NULL);
-
 }
 

@@ -97,7 +97,8 @@ void ICACHE_FLASH_ATTR startdemo_task(void *pvParameters)
 		vTaskDelay(100 / portTICK_RATE_MS);
 	}
 	udpClient();
-	//vTaskDelete(NULL);
+	TcpLocalServer();
+	vTaskDelete(NULL);
 }
 
 /******************************************************************************
