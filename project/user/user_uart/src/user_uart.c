@@ -168,6 +168,9 @@ static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 d
 	{
 		case CUSTOMIZE_CMD_FACTORY_RESET:
 			//user_key_short_press();
+			setSmartConfigFlag(0x1);   // short press enter smartconfig
+			vTaskDelay(100);
+			system_restart();  // restart then enter to smartconfig mode
 			break;
 		case CUSTOMIZE_CMD_DEV_CTRL_RESP:
 			{
@@ -249,8 +252,6 @@ void ICACHE_FLASH_ATTR user_uart_task(void *pvParameters)
 	u32 sys_time_value = system_get_time();
 	char uart_beat_data[]={0x7e, 0x0, 0x02, 0xFA, 0x0, 0x7A};
 
-	vTaskDelay(100);
-	serial_resp_out(CMD_WIFI_MODULE_READY,CMD_SUCCESS);
 
 	while(1)
 	{

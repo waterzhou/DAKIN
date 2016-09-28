@@ -52,12 +52,15 @@ void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
 		                                          len);
    //espconn_send(tcp_server_local,pdata,len);
    os_printf("recv %s\r\n", pdata);
+   //hspi_write_data(pdata, len);
    if(strncmp(&pdata[0], "getpicture", strlen("getpicture")) == 0) {
 	   os_printf("=======================picture====================\r\n");
    }
    if(strncmp(&pdata[0], "gettemperature", strlen("gettemperature")) == 0) {
 	   os_printf("=======================temperature====================\r\n");
-	   espconn_send(tcp_server_local,"gettemperature:25",strlen("gettemperature:25"));
+	   char uart_get_temperature[]={0x7e, 0x0, 0x01, 0x0A, 0x89};
+	   uart0_write_data(uart_get_temperature,sizeof(uart_get_temperature));
+	   //espconn_send(tcp_server_local,"gettemperature:25\r\n",strlen("gettemperature:25\r\n"));
    }
 }
 

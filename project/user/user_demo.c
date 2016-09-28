@@ -162,6 +162,8 @@ void ICACHE_FLASH_ATTR wificonnect_task(void *pvParameters)
 		vTaskDelay(100 / portTICK_RATE_MS);
 	}
 	printf("network is ready...\r\n");
+	vTaskDelay(100);
+	serial_resp_out(CMD_WIFI_MODULE_READY,CMD_SUCCESS);
 	need_notify_app = 1;
 	vTaskDelete(NULL);
 }
@@ -233,7 +235,7 @@ void ICACHE_FLASH_ATTR user_demo(void)
 	printf("heap_size %d\n", system_get_free_heap_size());
 
 	wifi_set_opmode(STATION_MODE);
-	ret = -1;//readSmartConfigFlag();// -1 read flash fail!
+	ret = readSmartConfigFlag();// -1 read flash fail!
 	printf(" read flag:%d \n", ret);
 	if (ret > 0) {		
 		setSmartConfigFlag(0);// clear smart config flag
@@ -244,7 +246,7 @@ void ICACHE_FLASH_ATTR user_demo(void)
 	
 
 #if USER_SPI_CTRL_DEV_EN
-	//spi_init(HSPI);
+	spi_init(HSPI);
 #endif
 	return;
 }
