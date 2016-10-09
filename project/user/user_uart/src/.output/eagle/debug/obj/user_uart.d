@@ -77,6 +77,7 @@
  /home/esp8266/Share/DAKIN/ESP8266_RTOS_SDK/include/espressif/smartconfig.h \
  /home/esp8266/Share/DAKIN/ESP8266_RTOS_SDK/include/espressif/spi_flash.h \
  /home/esp8266/Share/DAKIN/ESP8266_RTOS_SDK/include/espressif/pwm.h \
+ /home/esp8266/Share/DAKIN/ESP8266_RTOS_SDK/include/espressif/espconn.h \
  ../include/user_uart.h \
  /home/esp8266/Share/DAKIN/ESP8266_RTOS_SDK/include/freertos/queue.h \
  ../include/../../../include/user_config.h ../../../include/driver/uart.h

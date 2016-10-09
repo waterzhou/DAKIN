@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "esp_common.h"
+#include "espconn.h"
 #include "user_uart.h"
 
 #if USER_SPI_CTRL_DEV_EN
@@ -161,6 +162,8 @@ void ICACHE_FLASH_ATTR cus_wifi_handler_alinkdata2mcu(u8 dat_index, int dat_valu
 	do_ctrl(command, 2);	
 	return;
 }
+
+
 static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 datalen)
 {
 	ESP_DBG(("execute_serial_cmd=%d\r\n", cmdid));
@@ -172,14 +175,18 @@ static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 d
 			vTaskDelay(100);
 			system_restart();  // restart then enter to smartconfig mode
 			break;
-		case CUSTOMIZE_CMD_DEV_CTRL_RESP:
+		case CUSTOMIZE_CMD_DEV_CTRL_GET_TEMP_RSP:
+			TcpServerSend(data, datalen);
+
+			break;
+		/*case CUSTOMIZE_CMD_DEV_CTRL_RESP:
 			{
 				memset(g_user_data, 0, sizeof(g_user_data));
 				g_user_data[0] = datalen;
 				memcpy(&g_user_data[1], data, datalen);
 				device_status_change  = 1;
 			}
-			break;
+			break;*/
 		case CUSTOMIZE_CMD_CHANGE_UART_CFG:
 			{
 				uint8 command[2];

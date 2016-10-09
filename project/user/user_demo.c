@@ -92,10 +92,8 @@ void ICACHE_FLASH_ATTR startdemo_task(void *pvParameters)
 			break;
 		vTaskDelay(100 / portTICK_RATE_MS);	 // 100 ms
 	}
-	//while(1)
-	{
-		vTaskDelay(100 / portTICK_RATE_MS);
-	}
+	serial_resp_out(CMD_WIFI_MODULE_READY,CMD_SUCCESS);
+
 	udpClient();
 	TcpLocalServer();
 	vTaskDelete(NULL);
@@ -163,7 +161,6 @@ void ICACHE_FLASH_ATTR wificonnect_task(void *pvParameters)
 	}
 	printf("network is ready...\r\n");
 	vTaskDelay(100);
-	serial_resp_out(CMD_WIFI_MODULE_READY,CMD_SUCCESS);
 	need_notify_app = 1;
 	vTaskDelete(NULL);
 }
