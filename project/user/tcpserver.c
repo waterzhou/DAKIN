@@ -82,6 +82,7 @@ void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
 	   os_printf("=======================picture====================\r\n");
 	   char uart_get_picture[]={0x7e, 0x0, 0x01, 0x0B, 0x8a};
 	   uart0_write_data(uart_get_picture,sizeof(uart_get_picture));
+	   resetThermoImage();
    }
    if(strncmp(&pdata[0], "gettemperature", strlen("gettemperature")) == 0) {
 	   os_printf("=======================temperature====================\r\n");

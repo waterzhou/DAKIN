@@ -163,7 +163,18 @@ void ICACHE_FLASH_ATTR cus_wifi_handler_alinkdata2mcu(u8 dat_index, int dat_valu
 	return;
 }
 
-
+uint8 thermoimage[4416 + 2];
+void resetThermoImage()
+{
+	memset(thermoimage, 0, 4418);
+	thermoimage[4416] = '\r';
+	thermoimage[4417] = '\n';
+}
+void sendRespThermoImage()
+{
+	char uart_res_thermo[]={0x7e, 0x0, 0x01, 0x9a, 0x19};
+	uart0_write_data(uart_res_thermo,sizeof(uart_res_thermo));
+}
 static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 datalen)
 {
 	ESP_DBG(("execute_serial_cmd=%d\r\n", cmdid));
@@ -176,8 +187,10 @@ static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 d
 			system_restart();  // restart then enter to smartconfig mode
 			break;
 		case CUSTOMIZE_CMD_DEV_CTRL_GET_TEMP_RSP:
-			TcpServerSend(data, datalen);
-
+			memcpy(thermoimage + data[0]*122, &data[1], 122);
+			if (data[0] == 36)
+				TcpServerSend(thermoimage, 4418);
+			sendRespThermoImage();
 			break;
 		/*case CUSTOMIZE_CMD_DEV_CTRL_RESP:
 			{

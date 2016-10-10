@@ -373,7 +373,7 @@ uart0_rx_intr_handler(void *para)
             //printf("FRM_ERR\r\n");
             WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_FRM_ERR_INT_CLR);
         } else if (UART_RXFIFO_FULL_INT_ST == (uart_intr_status & UART_RXFIFO_FULL_INT_ST)) {
-            printf("full\r\n");
+            printf("full..................\r\n");
             fifo_len = (READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
             buf_idx = 0;
 
@@ -384,7 +384,7 @@ uart0_rx_intr_handler(void *para)
 
             WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
         } else if (UART_RXFIFO_TOUT_INT_ST == (uart_intr_status & UART_RXFIFO_TOUT_INT_ST)) {
-            printf("tout\r\n");
+            printf("tout.............................\r\n");
             fifo_len = (READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
             buf_idx = 0;
 
