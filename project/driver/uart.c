@@ -427,6 +427,7 @@ uart_init_new(void)
 	uart_config.parity          = USART_Parity_None;
 	uart_config.stop_bits     = USART_StopBits_1;
 	uart_config.flow_ctrl      = USART_HardwareFlowControl_None;
+	//uart_config.flow_ctrl      = USART_HardwareFlowControl_RTS;
 	uart_config.UART_RxFlowThresh = 120;
 	uart_config.UART_InverseMask = UART_None_Inverse;
 	UART_ParamConfig(UART0, &uart_config);
@@ -459,6 +460,7 @@ uart_init_new(void)
 	   UART_SetBaudrate(UART0,74880);
 	   UART_SetFlowCtrl(UART0,USART_HardwareFlowControl_None,0);
 	 */
+	 //UART_SetFlowCtrl(UART0,USART_HardwareFlowControl_RTS,120);
 #endif 
 
 	return;

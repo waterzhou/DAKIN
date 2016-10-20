@@ -187,10 +187,13 @@ static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 d
 			system_restart();  // restart then enter to smartconfig mode
 			break;
 		case CUSTOMIZE_CMD_DEV_CTRL_GET_TEMP_RSP:
+			//Note: data[0] is index,, and each payload is 122 valid data.
 			memcpy(thermoimage + data[0]*122, &data[1], 122);
+			TcpServerSend(&data[1], 122);
+			//Later send back
+			//sendRespThermoImage();
 			if (data[0] == 36)
-				TcpServerSend(thermoimage, 4418);
-			sendRespThermoImage();
+				TcpServerSend("send over", strlen("send over"));
 			break;
 		/*case CUSTOMIZE_CMD_DEV_CTRL_RESP:
 			{
@@ -277,18 +280,20 @@ void ICACHE_FLASH_ATTR user_uart_task(void *pvParameters)
 	{
 		if (xQueueReceive(xQueueCusUart, (void *)&dev_data_from_mcu, (portTickType)500/*portMAX_DELAY*/)) // wait about 5sec 
 		{
-			ESP_DBG(("data uart recv.."));
+			ESP_DBG(("data uart recv.................\r\n"));
+			sys_time_value = system_get_time();
+			
 			debug_print_hex_data(dev_data_from_mcu.rx_buf,dev_data_from_mcu.rx_len);
 
 			if(dev_data_from_mcu.rx_len>0x00){
 				cus_uart_data_handle(dev_data_from_mcu.rx_buf, dev_data_from_mcu.rx_len,NULL);
 			}
 		}
-		if((system_get_time()-sys_time_value)>=(5*1000*1000))  //about 1min, send data to uart0, demo beat data
+		if((system_get_time()-sys_time_value)>=(60*1000*1000))  //about 1min, send data to uart0, demo beat data
 		{
 			ESP_DBG(("uart beat data.[%d][%d]",sys_time_value,system_get_time()));
 			ESP_DBG(("heap_size %d\n", system_get_free_heap_size()));
-			uart0_write_data(uart_beat_data,sizeof(uart_beat_data));
+			//uart0_write_data(uart_beat_data,sizeof(uart_beat_data));
 			#if USER_SPI_CTRL_DEV_EN
 			spi_tx8(HSPI, 0x7a);
 			#endif

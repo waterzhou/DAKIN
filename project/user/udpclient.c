@@ -19,17 +19,10 @@ typedef struct s_msg_keepalive {
 	uint8 id1;
 	uint8 name[9];
 	uint8 type;
-	uint8 gau8IPAddress[4];
+	uint8 gau8macAddress[6];
 }t_msg_keep_alive;
 
-t_msg_keep_alive msg_keep_alive = 
-{
-	.id0 = 0,
-	.id1 = 2,
-	.name = DEMO_PRODUCT_NAME,
-	.type = 2,
-	.gau8IPAddress = {0},
-};
+t_msg_keep_alive msg_keep_alive;
 
 void UdpRecvCb(void *arg, char *pdata, unsigned short len)
 {
@@ -80,6 +73,17 @@ void udpClient(void*arg)
         os_printf("%u.",udp.remote_ip[i]);
 	}
 	os_printf("\n");
+	
+	memset(&msg_keep_alive, 0, sizeof(msg_keep_alive));
+	msg_keep_alive.id0 = 0;
+	msg_keep_alive.id1 = 2;
+	memcpy(msg_keep_alive.name,DEMO_PRODUCT_NAME, strlen(DEMO_PRODUCT_NAME));
+	msg_keep_alive.type = 2;
+	if (wifi_get_macaddr(0, msg_keep_alive.gau8macAddress))
+	{
+		os_printf("get mac addr=%02x:%02x:%02x%02x:%02x:%02x\r\n", MAC2STR(msg_keep_alive.gau8macAddress));
+	}
+
 	espconn_regist_recvcb(&udp_client,UdpRecvCb);
 	espconn_regist_sentcb(&udp_client,UdpSendCb);
     int8 res=0;
