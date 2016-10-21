@@ -44,6 +44,7 @@ CusUartIntrPtr dev_data_from_mcu;
 char uart_cfg_change = 0;
 char uart_cfg_baud_index;
 uint8 g_user_data[256];
+bool b_needresp = false;
 
 void debug_print_hex_data(char*buf, int len)
 {
@@ -190,10 +191,13 @@ static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 d
 			//Note: data[0] is index,, and each payload is 122 valid data.
 			memcpy(thermoimage + data[0]*122, &data[1], 122);
 			TcpServerSend(&data[1], 122);
+			b_needresp = true;
 			//Later send back
 			//sendRespThermoImage();
-			if (data[0] == 36)
+			if (data[0] == 36) {
 				TcpServerSend("send over", strlen("send over"));
+				b_needresp = false;
+			}
 			break;
 		/*case CUSTOMIZE_CMD_DEV_CTRL_RESP:
 			{

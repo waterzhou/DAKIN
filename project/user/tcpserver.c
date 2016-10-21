@@ -20,6 +20,7 @@ static struct espconn esp_conn;
 static  esp_tcp tcp;
 uint8 client_tcp_connect = 0;
 struct espconn* tcp_server_local=NULL;
+extern bool b_needresp;
 
 void TcpServerSend(uint8 *data, uint8 datalen)
 {
@@ -28,10 +29,10 @@ void TcpServerSend(uint8 *data, uint8 datalen)
 	remot_info *premot = NULL;
 	uint8 count = 0;
 	sint8 value = ESPCONN_OK;
-	uint8 *send = malloc(datalen + 2);
+	uint8 *send = malloc(datalen);
 	memcpy(send, data, datalen);
-	*(send+datalen) = '\r';
-	*(send+datalen+1) = '\n';
+	//*(send+datalen) = '\r';
+	//*(send+datalen+1) = '\n';
 	if (client_tcp_connect == 1) {
 		if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
 			for (count = 0; count < pesp_conn->link_cnt; count ++){
@@ -40,10 +41,10 @@ void TcpServerSend(uint8 *data, uint8 datalen)
 				pesp_conn->proto.tcp->remote_ip[1] = premot[count].remote_ip[1];
 				pesp_conn->proto.tcp->remote_ip[2] = premot[count].remote_ip[2];
 				pesp_conn->proto.tcp->remote_ip[3] = premot[count].remote_ip[3];
-				os_printf("TcpServerSend:%d\n", datalen + 2);
-				//espconn_send(pesp_conn,send,datalen + 2);
+				os_printf("TcpServerSend:%d\n", datalen);
+				ret = espconn_send(pesp_conn,send,datalen);
 				//ret = espconn_send(pesp_conn,"hello",strlen("hello"));
-				ret = espconn_send(pesp_conn,"hello daikin\r\n",strlen("hello daikin\r\n"));
+				//ret = espconn_send(pesp_conn,"hello daikin\r\n",strlen("hello daikin\r\n"));
 			}	
 		}
 		//ret = espconn_send(tcp_server_local,"hello\r\n",7);
@@ -79,8 +80,10 @@ void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
    }
    if (strncmp(&pdata[0], "ok", strlen("ok")) == 0) {
 	   os_printf("=======================ok====================\r\n");
-	   char uart_res_thermo[]={0x7e, 0x0, 0x01, 0x9a, 0x19};
-	   uart0_write_data(uart_res_thermo,sizeof(uart_res_thermo));
+	   if (b_needresp) {
+		char uart_res_thermo[]={0x7e, 0x0, 0x01, 0x9a, 0x19};
+		uart0_write_data(uart_res_thermo,sizeof(uart_res_thermo));
+	   }
    }
 }
 
@@ -165,6 +168,6 @@ void TcpLocalServer(void* arg)
 	client_tcp_connect = 0;
 	espconn_regist_connectcb(&esp_conn,TcpServerClientConnect);
 	espconn_accept(&esp_conn);
-
+	espconn_regist_time(&esp_conn,0,0);
 }
 
