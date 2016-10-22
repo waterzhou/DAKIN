@@ -239,7 +239,7 @@ void ICACHE_FLASH_ATTR user_demo(void)
 		xTaskCreate(wificonnect_task, "wificonnect_task", 256, NULL, 2, NULL);
 		need_notify_app = 1;
 	}
-	xTaskCreate(startdemo_task, "startdemo_task",(256*4), NULL, 2, NULL);
+	xTaskCreate(startdemo_task, "startdemo_task",(256*8), NULL, 2, NULL);
 	
 
 #if USER_SPI_CTRL_DEV_EN

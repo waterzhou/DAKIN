@@ -50,7 +50,7 @@ void UdpSendCb(void* arg)
 
 void t1Callback(void* arg)
 {
-    os_printf("t1 callback\n");
+    //os_printf("t1 callback\n");
 	espconn_send(&udp_client,(char *)&msg_keep_alive,sizeof(t_msg_keep_alive));
 
 }

@@ -190,12 +190,17 @@ static u8 ICACHE_FLASH_ATTR execute_serial_cmd(uint8 cmdid, uint8 *data, uint8 d
 		case CUSTOMIZE_CMD_DEV_CTRL_GET_TEMP_RSP:
 			//Note: data[0] is index,, and each payload is 122 valid data.
 			memcpy(thermoimage + data[0]*122, &data[1], 122);
-			TcpServerSend(&data[1], 122);
+			while(TcpServerSend(&data[1], 122) < 0)
+			{
+				vTaskDelay(400/portTICK_RATE_MS);
+			}
 			b_needresp = true;
 			//Later send back
 			//sendRespThermoImage();
 			if (data[0] == 36) {
-				TcpServerSend("send over", strlen("send over"));
+				while(TcpServerSend("send over", strlen("send over"))<0){
+					vTaskDelay(400);
+				}
 				b_needresp = false;
 			}
 			break;

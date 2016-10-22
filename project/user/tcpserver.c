@@ -15,6 +15,8 @@
 #define TCP_SERVER_RETRY_INTVL_S (5)
 #define TCP_SERVER_RETRY_CNT     (3)
 #define TCP_SERVER_GREETING "Hello!This is a tcp server test\n"
+#define TCP_SERVER_MUTI_SEND (0)
+
 
 static struct espconn esp_conn;
 static  esp_tcp tcp;
@@ -22,9 +24,9 @@ uint8 client_tcp_connect = 0;
 struct espconn* tcp_server_local=NULL;
 extern bool b_needresp;
 
-void TcpServerSend(uint8 *data, uint8 datalen)
+int TcpServerSend(uint8 *data, uint8 datalen)
 {
-	int ret;
+	int ret = -1;
 	struct espconn *pesp_conn = &esp_conn;
 	remot_info *premot = NULL;
 	uint8 count = 0;
@@ -34,6 +36,7 @@ void TcpServerSend(uint8 *data, uint8 datalen)
 	//*(send+datalen) = '\r';
 	//*(send+datalen+1) = '\n';
 	if (client_tcp_connect == 1) {
+#if TCP_SERVER_MUTI_SEND
 		if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
 			for (count = 0; count < pesp_conn->link_cnt; count ++){
 				pesp_conn->proto.tcp->remote_port = premot[count].remote_port;
@@ -41,16 +44,21 @@ void TcpServerSend(uint8 *data, uint8 datalen)
 				pesp_conn->proto.tcp->remote_ip[1] = premot[count].remote_ip[1];
 				pesp_conn->proto.tcp->remote_ip[2] = premot[count].remote_ip[2];
 				pesp_conn->proto.tcp->remote_ip[3] = premot[count].remote_ip[3];
-				os_printf("TcpServerSend:%d\n", datalen);
+				vTaskDelay(1000/portTICK_RATE_MS);
+				os_printf("TcpServerSend:%d\nport:%d\n", datalen,pesp_conn->proto.tcp->remote_port);
 				ret = espconn_send(pesp_conn,send,datalen);
 				//ret = espconn_send(pesp_conn,"hello",strlen("hello"));
 				//ret = espconn_send(pesp_conn,"hello daikin\r\n",strlen("hello daikin\r\n"));
-			}	
+			}
+
 		}
-		//ret = espconn_send(tcp_server_local,"hello\r\n",7);
-		os_printf("send ret=%d\r\n", ret);
+#else
+		ret = espconn_send(tcp_server_local,send,datalen);
+#endif
 	}
+	os_printf("send ret=%d\r\n", ret);
 	free(send);
+	return ret;
 }
 
 void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
@@ -117,19 +125,19 @@ void TcpServerClienSendCb(void* arg)
 {
     struct espconn* tcp_server_local=arg;
 	os_printf("TCP server SendCb\r\n");
-	os_printf("tcp client ip:%d.%d.%d.%d port:%d\n",tcp_server_local->proto.tcp->remote_ip[0],
+	/*os_printf("tcp client ip:%d.%d.%d.%d port:%d\n",tcp_server_local->proto.tcp->remote_ip[0],
 		                                          tcp_server_local->proto.tcp->remote_ip[1],
 		                                          tcp_server_local->proto.tcp->remote_ip[2],
 		                                          tcp_server_local->proto.tcp->remote_ip[3],
 		                                          tcp_server_local->proto.tcp->remote_port
-		                                          );
+		                                          );*/
 	// just test send continuely
 	//espconn_send(tcp_server_local,"gettemperature:25\r\n",strlen("gettemperature:25\r\n"));
 }
 
 void TcpServerClientConnect(void*arg)
 {
-    tcp_server_local=arg;
+	tcp_server_local=arg;
 	int ret;
 #if TCP_SERVER_KEEP_ALIVE_ENABLE
 	espconn_set_opt(tcp_server_local,BIT(3));//enable keep alive ,this api must call in connect callback
@@ -144,6 +152,8 @@ void TcpServerClientConnect(void*arg)
 	os_printf("keep alive enable.......................\r\n");
 #endif
 	client_tcp_connect = 1;
+	//Here can disable time1
+	//os_timer_disarm(&time1);
 	os_printf("tcp client ip:%d.%d.%d.%d port:%d\r\n",tcp_server_local->proto.tcp->remote_ip[0],
 		                                          tcp_server_local->proto.tcp->remote_ip[1],
 		                                          tcp_server_local->proto.tcp->remote_ip[2],
