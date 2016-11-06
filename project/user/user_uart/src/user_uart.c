@@ -255,6 +255,7 @@ static u8 ICACHE_FLASH_ATTR cus_uart_data_handle(char *dat_in, int in_len, char 
 		{
 			resp = CMD_INVALID_HEAD;
 			ESP_DBG(("header invalid\r\n"));
+			serial_resp_out(0x08, CMD_CRC_ERROR);
 			return;
 		}
 		len = *(p + 1 + 1) + 3;
