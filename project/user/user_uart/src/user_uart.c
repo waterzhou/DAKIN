@@ -249,31 +249,39 @@ static u8 ICACHE_FLASH_ATTR cus_uart_data_handle(char *dat_in, int in_len, char 
 	u8 resp = CMD_SUCCESS;
 	uint8 len, crc, cmdid;
 	ESP_DBG(("uart data handler.."));
-	while(in_len > 3)
-	{
-		if(*p != SERIAL_SOF)
+	if (in_len < 1024*4){
+		while(in_len > 3)
 		{
-			resp = CMD_INVALID_HEAD;
-			ESP_DBG(("header invalid\r\n"));
-			serial_resp_out(0x08, CMD_CRC_ERROR);
-			return;
+			if(*p != SERIAL_SOF)
+			{
+				resp = CMD_INVALID_HEAD;
+				ESP_DBG(("header invalid\r\n"));
+				serial_resp_out(0x08, CMD_CRC_ERROR);
+				return;
+			}
+			len = *(p + 1 + 1) + 3;
+			crc = sum8(p, len);
+			if(*(p + len) != crc) {
+				resp = CMD_CRC_ERROR;
+				//serial_resp_out(CMD_PACKET_ERROR_RESP, CMD_CRC_ERROR);
+				ESP_DBG(("crc invalid\r\n"));
+				return;
+			}
+			cmdid = *(p + 3);
+			data = p + 4;
+			len = *(p + 1 + 1) - 1;
+			execute_serial_cmd(cmdid, data, len);
+			//in case two packet coming together
+			len = *(p + 1 + 1) + 4;
+			p = p + len;
+			in_len = in_len - len;
 		}
-		len = *(p + 1 + 1) + 3;
-		crc = sum8(p, len);
-		if(*(p + len) != crc) {
-			resp = CMD_CRC_ERROR;
-			//serial_resp_out(CMD_PACKET_ERROR_RESP, CMD_CRC_ERROR);
-			ESP_DBG(("crc invalid\r\n"));
-			return;
+	} else {
+		ESP_DBG(("It is camera data .....just passthrough\r\n"));
+		while(TcpServerSend(p, in_len) < 0)
+		{
+			vTaskDelay(400/portTICK_RATE_MS);
 		}
-		cmdid = *(p + 3);
-		data = p + 4;
-		len = *(p + 1 + 1) - 1;
-		execute_serial_cmd(cmdid, data, len);
-		//in case two packet coming together
-		len = *(p + 1 + 1) + 4;
-		p = p + len;
-		in_len = in_len - len;
 	}
 
 	return 0x00;

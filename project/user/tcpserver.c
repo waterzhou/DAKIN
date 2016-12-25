@@ -19,12 +19,38 @@
 
 
 static struct espconn esp_conn;
+os_timer_t camera_timer_t;
 static  esp_tcp tcp;
 uint8 client_tcp_connect = 0;
+uint8 g_camera_index = 0;
 struct espconn* tcp_server_local=NULL;
 extern bool b_needresp;
+int TcpServerSend2(uint8 *data, uint16 datalen)
+{
+	int ret = -1;
+	struct espconn *pesp_conn = &esp_conn;
+	remot_info *premot = NULL;
+	uint8 count = 0;
+	sint8 value = ESPCONN_OK;
+	if (client_tcp_connect == 1) {
+		if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
+			for (count = 0; count < pesp_conn->link_cnt; count ++){
+				pesp_conn->proto.tcp->remote_port = premot[count].remote_port;
+				pesp_conn->proto.tcp->remote_ip[0] = premot[count].remote_ip[0];
+				pesp_conn->proto.tcp->remote_ip[1] = premot[count].remote_ip[1];
+				pesp_conn->proto.tcp->remote_ip[2] = premot[count].remote_ip[2];
+				pesp_conn->proto.tcp->remote_ip[3] = premot[count].remote_ip[3];
+				vTaskDelay(1000/portTICK_RATE_MS);
+				os_printf("TcpServerSend:%d\nport:%d\n", datalen,pesp_conn->proto.tcp->remote_port);
+				ret = espconn_send(pesp_conn,data,datalen);
+			}
 
-int TcpServerSend(uint8 *data, uint8 datalen)
+		}
+	}
+	os_printf("send ret=%d\r\n", ret);
+	return ret;
+}
+int TcpServerSend(uint8 *data, uint16 datalen)
 {
 	int ret = -1;
 	struct espconn *pesp_conn = &esp_conn;
@@ -61,6 +87,16 @@ int TcpServerSend(uint8 *data, uint8 datalen)
 	return ret;
 }
 
+void ICACHE_FLASH_ATTR camera_block_rx()
+{
+	uint8 uart_get_temblock[]={0x7e, 0x0, 0x02, 0x0c, 0x00,0x8c};
+	printf("camera_block_rx..............=%d\r\n", g_camera_index);
+	os_timer_disarm(&camera_timer_t);
+	uart_get_temblock[4] = g_camera_index;
+	uart_get_temblock[5] = 0x8c + g_camera_index;
+	uart0_write_data(uart_get_temblock,sizeof(uart_get_temblock));
+}
+
 void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
 {
    struct espconn* tcp_server_local=arg;    
@@ -76,6 +112,7 @@ void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
    if(strncmp(&pdata[0], "getpicture", strlen("getpicture")) == 0) {
 	   os_printf("=======================picture====================\r\n");
 	   char uart_get_picture[]={0x7e, 0x0, 0x01, 0x0B, 0x8a};
+	   g_camera_index = 0;
 	   uart0_write_data(uart_get_picture,sizeof(uart_get_picture));
 	   resetThermoImage();
 
@@ -91,6 +128,23 @@ void TcpServerRecvCb(void *arg, char *pdata, unsigned short len)
 	   if (b_needresp) {
 		char uart_res_thermo[]={0x7e, 0x0, 0x01, 0x9a, 0x19};
 		uart0_write_data(uart_res_thermo,sizeof(uart_res_thermo));
+	   }
+   }
+   if (strncmp(&pdata[0], "cameraok", strlen("cameraok")) == 0) {
+	   os_printf("=======================camera ok %d====================\r\n", g_camera_index);
+	   uint8 uart_get_temblock[]={0x7e, 0x0, 0x02, 0x0c, 0x00,0x8c};
+	   g_camera_index++;
+	   if (g_camera_index > 150)
+	   {
+		os_printf("one complete picture is ok\r\n");
+	   } else {
+		uart_get_temblock[4] = g_camera_index;
+		uart_get_temblock[5] = 0x8c + g_camera_index;
+		uart0_write_data(uart_get_temblock,sizeof(uart_get_temblock));
+				
+		os_timer_disarm(&camera_timer_t);
+		os_timer_setfn(&camera_timer_t, camera_block_rx , NULL);   //a demo to process the data in uart rx buffer
+		os_timer_arm(&camera_timer_t,1000,1);
 	   }
    }
 }

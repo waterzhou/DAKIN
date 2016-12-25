@@ -68,6 +68,12 @@ typedef struct
 	char rx_buf[CUS_UART_TX_MAX];
 }CusUartIntrPtr;
 
+typedef struct
+{
+	int rx_len;
+	char rx_buf[4*1024];
+}UpperUartIntrPtr;
+
 typedef struct _serial_cmd_t
 {
 	uint8 waiting_resp;

@@ -44,6 +44,7 @@ typedef struct _os_event_ {
 xTaskHandle xUartTaskHandle;
 xQueueHandle xQueueUart;
 os_timer_t buff_timer_t;
+extern os_timer_t camera_timer_t;
 
 LOCAL STATUS
 uart_tx_one_char(uint8 uart, uint8 TxChar)
@@ -381,21 +382,36 @@ UART_IntrConfig(UART_Port uart_no,  UART_IntrConfTypeDef *pUARTIntrConf)
     CLEAR_PERI_REG_MASK(UART_INT_ENA(uart_no), UART_INTR_MASK);
     SET_PERI_REG_MASK(UART_INT_ENA(uart_no), pUARTIntrConf->UART_IntrEnMask);
 }
-char Rx_buf[1024];
+char Rx_buf[1024*4];
 int Rx_index = 0;
+UpperUartIntrPtr uart_upper_data;
 
 void ICACHE_FLASH_ATTR
 uart_test_rx()
 {
 	int i;
+	portBASE_TYPE xHigherPriorityTaskWoken;
 	printf("uart test rx..............=%d\r\n", Rx_index);
 	os_timer_disarm(&buff_timer_t);
-	for(i=0;i<Rx_index;i++)
+	/*for(i=0;i<Rx_index;i++)
 	{
-		printf("%X ",Rx_buf[i]);
+		printf("%X ",uart_upper_data.rx_buf[i]);
 	}
-	printf("\r\n");
+	printf("\r\n");*/
+	uart_upper_data.rx_len = Rx_index;
 	// reset to 0;
+	if (uart_upper_data.rx_len == 4*1024)
+	{
+		os_timer_disarm(&camera_timer_t);
+		while(TcpServerSend2(uart_upper_data.rx_buf, uart_upper_data.rx_len) < 0)
+		{
+			vTaskDelay(400/portTICK_RATE_MS);
+		}
+	} else {
+		xQueueSendFromISR(xQueueCusUart, (void *)&uart_upper_data, &xHigherPriorityTaskWoken);
+		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+	}
+
 	Rx_index = 0;
 }
 
@@ -419,14 +435,14 @@ uart0_rx_intr_handler(void *para)
 	CusUartIntrPtr uart_intr_data;
 
 	uint32 uart_intr_status = READ_PERI_REG(UART_INT_ST(uart_no)) ;
-	printf("init...................\r\n");
+	//("init...................\r\n");
 	memset((char*)&uart_intr_data, 0, sizeof(CusUartIntrPtr));
 	while (uart_intr_status != 0x0) {
 		if (UART_FRM_ERR_INT_ST == (uart_intr_status & UART_FRM_ERR_INT_ST)) {
 			//printf("FRM_ERR\r\n");
 			WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_FRM_ERR_INT_CLR);
 		} else if (UART_RXFIFO_FULL_INT_ST == (uart_intr_status & UART_RXFIFO_FULL_INT_ST)) {
-			printf("full..................\r\n");
+			//printf("full..................\r\n");
 			fifo_len = (READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
 			buf_idx = 0;
 
@@ -440,7 +456,7 @@ uart0_rx_intr_handler(void *para)
 			
 			fifo_len = (READ_PERI_REG(UART_STATUS(UART0)) >> UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
 			buf_idx = 0;
-			printf("Got.............................%d\r\n", fifo_len);
+			//printf("Got.............................%d\r\n", fifo_len);
 			while (buf_idx < fifo_len) {
 				uart_intr_data.rx_buf[uart_intr_data.rx_len+buf_idx] = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
 				buf_idx++;
@@ -467,10 +483,10 @@ uart0_rx_intr_handler(void *para)
 		}
 
 		uart_intr_status = READ_PERI_REG(UART_INT_ST(uart_no)) ;
-		printf("status............=%d\r\n", uart_intr_status);
+		//printf("status............=%d\r\n", uart_intr_status);
 	}
 	
-	printf("recv ok.......................%d\r\n",uart_intr_data.rx_len);
+	//printf("recv ok.......................%d\r\n",uart_intr_data.rx_len);
 	if (uart_intr_data.rx_len > 0)
 	{
 		/*for(i=0;i<uart_intr_data.rx_len;i++)
@@ -480,12 +496,13 @@ uart0_rx_intr_handler(void *para)
 		printf("\r\n");*/
 		//uart0_write_data("hello", 5);
 
-		memcpy(&Rx_buf[Rx_index], uart_intr_data.rx_buf, uart_intr_data.rx_len);
+		//memcpy(&Rx_buf[Rx_index], uart_intr_data.rx_buf, uart_intr_data.rx_len);
+		memcpy(&uart_upper_data.rx_buf[Rx_index], uart_intr_data.rx_buf, uart_intr_data.rx_len);
 		Rx_index += uart_intr_data.rx_len;
 		
 		os_timer_disarm(&buff_timer_t);
 		os_timer_setfn(&buff_timer_t, uart_test_rx , NULL);   //a demo to process the data in uart rx buffer
-		os_timer_arm(&buff_timer_t,10,1);
+		os_timer_arm(&buff_timer_t,20,1);
 		//xQueueSendFromISR(xQueueCusUart, (void *)&uart_intr_data, &xHigherPriorityTaskWoken);
 		//portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 	}
